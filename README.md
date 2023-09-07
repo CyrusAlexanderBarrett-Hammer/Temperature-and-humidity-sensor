@@ -1,8 +1,4 @@
-# Temperature and humidity sensor
- Labview and standalone program for getting temperature and humidity from the SHT85 and MAX31856
-
- 
- Made by Cyrus Alexander Barrett-Hammer, buildt on a project started by Joakim Vigemyr
+Made by Cyrus Alexander Barrett-Hammer, buildt on a project started by Joakim Vigemyr
 
 My gmail address: cyrusalexander2004@gmail.com
 ---------------
