@@ -35,16 +35,9 @@ if exist %PYTHON_INSTALLER_PATH% (
     pause
 )
 
-pause
-
 :: Install Python 3.6.8
 echo Installing Python 3.6.8...
 echo Installer path is %PYTHON_INSTALLER_PATH%
-echo Installation path is %PYTHON_PATH%
-start /wait "" %PYTHON_INSTALLER_PATH% /quiet InstallAllUsers=0 PrependPath=1 TargetDir=%PYTHON_PATH%
-echo Installation error level: %ERRORLEVEL%
-
-if exist %PYTHON_INSTALLER_PATH% (echo Thank god)
 
 pause
 
@@ -54,25 +47,20 @@ pause
 
 if %USE_THIS_MAJOR_VERSION% geq 10 (
     echo Downloading get-pip.py using curl...
-    pause
     curl -o %GET_PIP_PATH% %GET_PIP_URL%
 ) else (
-    pause
     echo Downloading get-pip.py using bitsadmin...
     bitsadmin /transfer myDownloadJob /download /priority normal %GET_PIP_URL% %CD%\%GET_PIP_PATH%
 )
-
-pause
 
 :: Install pip
 echo Installing pip...
 %PYTHON_PATH%\python.exe %GET_PIP_PATH%
 
-:: Add Python and pip to PATH
-echo Possible crash coming up? Setting path next.
 pause
+
+:: Add Python and pip to PATH
 set NEW_PATH=%PATH%;%PYTHON_PATH%\Scripts
-echo Path set...
 pause
 if defined NEW_PATH if "%NEW_PATH:~0,1024%" neq "%NEW_PATH%" (
     echo Error: New PATH exceeds the 1024 character limit imposed by setx.
@@ -81,20 +69,21 @@ if defined NEW_PATH if "%NEW_PATH:~0,1024%" neq "%NEW_PATH%" (
     exit
 )
 setx PATH "%NEW_PATH%"
+echo PATH set
+pause
 
 :: Install Python libraries
 echo Installing required Python libraries...
 %PIP_PATH% install pyserial
 %PIP_PATH% install serial
 %PIP_PATH% install tk
+echo Libraries installed
 pause
 
 :: Clean up
 echo Cleaning up...
 del %PYTHON_INSTALLER_PATH%
 del %GET_PIP_PATH%
-
-pause
 
 echo Installation completed.
 endlocal
