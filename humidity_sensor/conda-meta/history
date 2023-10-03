@@ -1,0 +1,23 @@
+==> 2023-10-03 15:10:33 <==
+# cmd: C:\Users\Cyrus\anaconda3x86\Scripts\conda-script.py create --name humidity_sensor python=3.6.8
+# conda version: 4.12.0
++defaults/noarch::wheel-0.37.1-pyhd3eb1b0_0
++defaults/win-32::certifi-2021.5.30-py36h9f7ea03_0
++defaults/win-32::pip-21.2.2-py36h9f7ea03_0
++defaults/win-32::python-3.6.8-h9f7ef89_7
++defaults/win-32::setuptools-58.0.4-py36h9f7ea03_0
++defaults/win-32::sqlite-3.38.3-hc431981_0
++defaults/win-32::vc-14.2-h21ff451_1
++defaults/win-32::vs2015_runtime-14.27.29016-h5e58377_2
++defaults/win-32::wincertstore-0.2-py36hcdd9a18_0
+# update specs: ['python=3.6.8']
+==> 2023-10-03 15:11:54 <==
+# cmd: C:\Users\Cyrus\anaconda3x86\Scripts\conda-script.py install pyserial
+# conda version: 4.12.0
++defaults/win-32::pyserial-3.5-py36h9f7ea03_0
+# update specs: ['pyserial']
+==> 2023-10-03 15:12:45 <==
+# cmd: C:\Users\Cyrus\anaconda3x86\Scripts\conda-script.py install tk
+# conda version: 4.12.0
++defaults/win-32::tk-8.6.12-hc431981_0
+# update specs: ['tk']
