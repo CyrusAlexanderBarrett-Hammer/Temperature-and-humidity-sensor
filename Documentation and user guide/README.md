@@ -1,4 +1,5 @@
 Refined and finished by Cyrus Alexander Barrett-Hammer, buildt on a project started by Joakim Vigemyr
+Refined by Cyrus Alexander Barrett-Hammer, buildt on a project started by Joakim Vigemyr
 
 My gmail address: cyrusalexander2004@gmail.com
 

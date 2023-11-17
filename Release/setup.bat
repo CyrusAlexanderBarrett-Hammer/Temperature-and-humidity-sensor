@@ -45,6 +45,7 @@ if exist %PYTHON_INSTALLER_PATH% (
 :: Install Python 3.6.8
 echo Installing Python 3.6.8...
 echo Installer path is %PYTHON_INSTALLER_PATH%
+echo A separate window opened asking if you want to allow python to be installed.
 start /wait "" %PYTHON_INSTALLER_PATH% /quiet InstallAllUsers=0 PrependPath=0 
 
 if exist %PYTHON_PATH% (
@@ -84,18 +85,32 @@ for /f "tokens=2,*" %%a in ('reg query "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControl
 )
 
 set "UserPath="
+set "SystemPath="
 
-:: Query the registry for the current System PATH value
+:: Query the registry for the current User PATH value
 for /f "tokens=2,* skip=2" %%a in ('reg query "HKCU\Environment" /v "PATH"') do (
     set "UserPath=%%b"
+)
+
+:: Query the registry for the current System PATH value
+for /f "tokens=2,* skip=2" %%a in ('reg query "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v "PATH"') do (
+    set "SystemPath=%%b"
 )
 
 set "UserPath=%UserPath%;%PYTHON_PATH%"
 set "UserPath=%UserPath%;%PYTHON_PATH%\Scripts"
 
+set "SystemPath=%UserPath%;%PYTHON_PATH%"
+set "SystemPath=%UserPath%;%PYTHON_PATH%\Scripts"
+
 :: Check for PATH length
-echo %UserPath%
 if defined UserPath if "!LongPathsEnabled!"=="0x1" if "!UserPath:~0,1024!" neq "!UserPath!" (
+    echo Error: New PATH is above PATH length limit.
+    echo PATH is too long, so the installation will not work. Ask IT to disable PATH limit, then rerun the BATCH script.
+    pause
+    exit
+)
+if defined SystemPath if "!LongPathsEnabled!"=="0x1" if "!SystemPath:~0,1024!" neq "!SystemPath!" (
     echo Error: New PATH is above PATH length limit.
     echo PATH is too long, so the installation will not work. Ask IT to disable PATH limit, then rerun the BATCH script.
     pause
@@ -103,6 +118,7 @@ if defined UserPath if "!LongPathsEnabled!"=="0x1" if "!UserPath:~0,1024!" neq "
 )
 
 setx PATH "%UserPath%"
+setx /M PATH "%SystemPath%"
 
 :: Call PowerShell command to remove duplicates from PATH
 for /f "delims=" %%i in ('powershell -command "[String]::Join(';', (([System.Environment]::GetEnvironmentVariable('PATH', [System.EnvironmentVariableTarget]::User) -split ';') | Sort-Object -Unique))"') do set UserPath=%%i
