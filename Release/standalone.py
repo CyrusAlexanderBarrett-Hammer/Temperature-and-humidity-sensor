@@ -7,12 +7,22 @@ from labview import run
 #from datetime import datetime
 
 import re
+import traceback
+
 import tkinter as tk
 
 #(datalogging, startTime, logName, decimal, datalog) = (False, datetime(datetime.min.year, datetime.min.month, datetime.min.day), "", "", "") #In case of labview not accessing variables outside functions
-data = ["", "", "", ""]
+data = [0, 0, "", ""]
 
 updateDataJob = None
+
+def cancelJob():
+    global updateDataJob
+
+    if updateDataJob is not None:
+        print("Restarting job")
+        window.after_cancel(updateDataJob)
+        updateDataJob = None
 
 
 def updateData(interval):
@@ -25,8 +35,9 @@ def updateData(interval):
     global updateDataJob
 
     data = (run(False, True))
-    humidity.config(text="Humidity: {}".format(data[0]))
-    temperature.config(text="Temperature: {}".format(data[1]))
+
+    humidity.config(text="Humidity: {}".format(str(data[0])))
+    temperature.config(text="Temperature: {}".format(str(data[1])))
     deltaStartupTime.config(text="Time since startup: {}".format(data[2]))
     message.config(text="Message: {}".format(data[3]))
 
@@ -36,10 +47,7 @@ def updateData(interval):
 def submit():
     global updateDataJob
 
-    if updateDataJob is not None:
-        print("Restarting job")
-        window.after_cancel(updateDataJob)
-        updateDataJob = None
+    cancelJob()
 
     interval = ""
 
@@ -64,20 +72,17 @@ def submit():
             labview.interuptSetup = False
             print("Running setup")
             setup(False, datalogging)
-            #updateData(interval)
+            updateData(interval)
 
     except Exception as e:
-        print(e)
+        print(traceback.print_exc())
 
 #To be deleted, fucked, and expired
 def runThis():
     print("RUnning runThis")
     global updateDataJob
 
-    if updateDataJob is not None:
-        print("Restarting job")
-        window.after_cancel(updateDataJob)
-        updateDataJob = None
+    cancelJob()
 
     interval = ""
 
@@ -106,10 +111,16 @@ def runThis():
     except:
         pass
 
+
+def stop():
+    global updateDataJob
+
+    cancelJob()
+
 window = tk.Tk()
 
 # Create input fields
-intervalInText = tk.Label(window, text="What sensor reading time interval do you want in seconds (minimum 20ms)?") #Does the decimal point conversion across regions work in the labview.py script?
+intervalInText = tk.Label(window, text="    What sensor reading time interval do you want in seconds (minimum 0.02s with only SHT85, 0.2s with MAX31856)?    ") #Does the decimal point conversion across regions work in the labview.py script?
 intervalInText.pack()
 intervalIn = tk.Entry(window)
 intervalIn.pack()
@@ -120,16 +131,19 @@ dataloggingIn = tk.Entry(window)
 dataloggingIn.pack()
 
 # Create submit button
-#button = tk.Button(window, text="Submit", command=submit)
-#button.pack()
+submitButton = tk.Button(window, text = "Run", command = submit)
+submitButton.pack()
 
-#Fuck off!
-button2 = tk.Button(window, text = "Setup", command = submit)
-button2.pack()
+stopButton = tk.Button(window, text = "Stop", command = stop)
+stopButton.pack()
 
-#You too!
-button2 = tk.Button(window, text = "Run", command = runThis)
-button2.pack()
+# #Fuck off!
+# button2 = tk.Button(window, text = "Setup", command = submit)
+# button2.pack()
+
+# #You too!
+# button3 = tk.Button(window, text = "Run", command = runThis)
+# button3.pack()
 
 
 humidity = tk.Label(window, text="Humidity: {}".format(data[0]))

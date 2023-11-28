@@ -76,8 +76,8 @@ bool readSht85(int readingType)                                    // Funksjon f
     //}
     //else
     //{
+    //Possible insurpetrator
     if(!timeRead){if (klokke) if(!readDs1307()) return 0;}         // Hvis klokke brukes og ikke allerede lest av, skriv dag/klokke til pc, hvis feil, gå ut av funksjon med error
-
       sht.read();
 
       //String finishedString = "";

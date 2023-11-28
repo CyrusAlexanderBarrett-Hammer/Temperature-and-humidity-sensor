@@ -1,6 +1,6 @@
 void loop()                                                     // Arduino loop funksjon
-{ 
-    unsigned long currentTime = millis();                       // Hent tid siden oppstart
+{
+  currentTime = millis();                                       // Hent tid siden oppstart
     
     if (seriellKomunikasjon)                                    // Hvis seriell komunikasjon er aktivert
     {
@@ -15,6 +15,10 @@ void loop()                                                     // Arduino loop 
             previousFukt = currentTime;                         // Sett variabel for forrige fuktavlesing til nåværende tid
             timeRead = true;                                    //Brap! Read once, avoid duplicates!
         }
+
+        //Serial.print("03");
+          //Serial.print("888");
+          //Serial.print('\n');
 
         if(temperaturDelay <= currentTime - previousTemp)                
         // Hvis temperaturkontroller er valgt at skal brukes, og tid siden start minus tid siden start under forrige temperaturavlesing er mer eller lik variabel for tid mellom temperaturavlesinger
@@ -91,15 +95,12 @@ void thermocoupleFaultHandler(uint8_t code)
           
           if(check >= failChecks && faultReference == faultUpdated)
           {
+            alertPython(String(code), true); //Sensor error couldn't be fixed, report to Python
             errorCode = code;
             error();
           }
           else if(faultUpdated != faultReference){break;}
         }
-        
-        
-        //Ignore, ignore!
-        //uint8_t fault = maxthermo.readFault();                      // Les error fra temperaturkontroller
     }
 }
 
@@ -134,6 +135,7 @@ void SHT85FaultHandler(uint8_t code)
           
           if(check >= failChecks && faultReference == faultUpdated)
           {
+            alertPython(String(code), true);
             errorCode = code;
             error();
           }
@@ -144,4 +146,34 @@ void SHT85FaultHandler(uint8_t code)
         //Ignore, ignore!
         //uint8_t fault = maxthermo.readFault();                      // Les error fra temperaturkontroller
     }
+}
+
+//Stops spamming and potentially buffer overrun
+bool spamFilter()
+{
+  if(messageDelay <= currentTime - previousMessage)
+  {
+    previousMessage = currentTime;
+    return true;
+  }
+  else{return false;}
+}
+
+//Warns python of errors Arduino side
+void sendMessage(String message)
+{
+  Serial.print("alert");
+  Serial.print(message);
+  Serial.print('\n');
+}
+  
+void alertPython(String message, bool useSpamFilter){
+  if(useSpamFilter)
+  {
+    //Serial.print("Spam filter returned ");
+    //Serial.println(spamFilter());
+    if(spamFilter()){sendMessage(message);} //Send message if spam filter allows
+  }
+  
+  else{sendMessage(message);}
 }

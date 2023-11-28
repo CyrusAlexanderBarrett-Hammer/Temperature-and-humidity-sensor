@@ -72,15 +72,18 @@ void setup()                                                    // Arduino setup
       }            
       maxthermo.setThermocoupleType(tcType);                  //      Sett type thermocouple
       if (!readMax31856Status()) thermocoupleFaultHandler(7);                     //      Se om det er noe galt med temperaturkontroller, hvis feil: gå til error-funksjon  
-    } 
+    }
 
     // Fuktighetssensor
-    Wire.begin();                                               // Start I2C kommunikasjon for fuktighetssensor
-    if (!sht.begin(SHT85_ADDRESS))                              //      Sett opp I2C kommunikasjon med fuktighetssensor, hvis feil:
+    if(fuktighet && shtTemperatur)
     {
-        //errorCode = 4;                                          //          Sett error-kode til 4                     
-        //error();                                                //          Gå til error-funksjon
-        SHT85FaultHandler(4);
+      Wire.begin();                                               // Start I2C kommunikasjon for fuktighetssensor
+      if (!sht.begin(SHT85_ADDRESS))                              //      Sett opp I2C kommunikasjon med fuktighetssensor, hvis feil:
+      {
+          //errorCode = 4;                                          //          Sett error-kode til 4                     
+          //error();                                                //          Gå til error-funksjon
+          SHT85FaultHandler(4);
+      }
     }
     digitalWrite(rele, HIGH);                                   //      Sett reléutgang høyt
 }

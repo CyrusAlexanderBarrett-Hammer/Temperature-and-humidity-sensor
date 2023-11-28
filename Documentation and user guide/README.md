@@ -1,5 +1,4 @@
 Refined and finished by Cyrus Alexander Barrett-Hammer, buildt on a project started by Joakim Vigemyr
-Refined by Cyrus Alexander Barrett-Hammer, buildt on a project started by Joakim Vigemyr
 
 My gmail address: cyrusalexander2004@gmail.com
 
@@ -17,7 +16,7 @@ HUMIDITY SENSOR FUNCTIONALITY
 
 Componets used: Arduino Micro, DS1307 clock, MAX31856 temperature sensor for respective versions, and SHT85 humidity sensor
 
-labview.py is the script run from labview using "open python session", "python node", and "close python session". The function "setup" is run once and sets up the serial communication, returning a string with startup time and date. The "run" function returns an array of strings with every time it is run. Current Humidity: Index 0. Current temperature: Index 1. Uptime: Index 2. Messages from program: Index 3.
+labview.py is the script run from labview using "open python session", "python node", and "close python session". The function "setup" is run once and sets up the serial communication, returning a string with startup time and date. The "run" function returns an array of strings and floats with every time it is run. Current Humidity: Index 0. Current temperature: Index 1. Uptime: Index 2. Messages from program: Index 3. Humidity and temperature is float, rest is string. All can be None if there's no data available.
 
 standalone.py displays temperature and humidity in an interface with a user set time interval and optional datalogging to a .txt file with timestamp, as a standalone application
 
@@ -34,7 +33,16 @@ You'll need to have Admin from IT to run this installer
 ---------------
 OPERATION
 
-Coming: Device hardware version, user set time interval, optional datalogging, and what connections are being used can be set from the configuration file settings.(extension). Device hardware version 1 is with both MAX31856 and SHT85 (more accurate temperature), and 2 is only SHT85 (more tidy).
+Coming:
+
+    Self-interrupt on Setup if box is not connected within a timeframe
+
+    Device hardware version, user set time interval, optional datalogging, and what connections are being used can be set from the configuration file settings.(extension). Device hardware version 1 is with both MAX31856 and SHT85 (more accurate temperature), and 2 is only SHT85 (more tidy).
+
+    Compensate for daylight saving time Arduino side
+
+    All available data values returned at once instead of None when not available, depending on how many wants it
+
 
 Program runs as long as computer is not in sleep mode
 
@@ -44,6 +52,8 @@ The minimal measurement time interval for both programs is 200 milliseconds on t
 
 If USB is removed, the program will recover if USB is reconnected within the timeout of 100 seconds
 
+If you get a lot of None output, the data is not available yet. Reducing the data interval with some milliseconds solves the issue.
+
 
 ---------------
 TROUBLESHOOTING
@@ -51,8 +61,12 @@ TROUBLESHOOTING
 standalone.py won't run:
     Both .py program files needs to be in the same folder for standalone.py to work
 
+
 The program crashes:
     Program cannot run while computer is in sleep mode
+    Temperature and humidity sensor device is not connected
+    In the standalone program, the "run" button has been clicked twice. Try reconnecting the USB.
+
 
 Non-frantic LED flashes indicates any other error
 
@@ -60,7 +74,7 @@ The device can be reset by unplugging and reconnecting the USB
 
 
 ---------------
-There shouldn't be any errors with the python scripts, but if any, send them to me on gmail, with any error messages and LED flash patterns, plus steps to recreate the error if possible
+There shouldn't be any errors with the system, but if any, send them to me on gmail, with any error messages and LED flash patterns, plus steps to recreate the error if possible
 
 It would be great to hear any feedback and suggestions for improvement!
 
@@ -72,5 +86,7 @@ Version 1.0:
 First release
 Added an easter egg
 
+Version 1.1:
+Prevented program from freezing on error during run
 
 ---------------

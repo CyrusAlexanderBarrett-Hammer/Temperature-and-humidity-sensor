@@ -5,10 +5,12 @@ void error ()                                                   // Funksjon for 
     if (seriellKomunikasjon)                                    // Er seriell kommunikasjon slått på?
   
     {
+        /*
         Serial.print("09");                                     //      Skriv kode; "09" til pc
         if (errorCode < 10) Serial.print('0');                  //      Hvis error-koden er under 10, skriv "0" til pc
         Serial.print(String(errorCode));                        //      Skriv error-kode til pc
         Serial.print('\n');                                     //      Skriv newline til pc
+        */
     }
     while (a[1] > 5)                                            // Så lenge 2. del av blinkekoden er under 5:
     {
@@ -22,7 +24,14 @@ void error ()                                                   // Funksjon for 
 
     while (1)                                                   // Loop
     {
-        if (seriellKomunikasjon) {Serial.println("102");}
+        currentTime = millis();                                 // Hent tid siden oppstart
+        //Serial.print("09");                                   //      Skriv kode; "09" til pc
+        String fullError = "";
+        if (errorCode < 10) fullError += '0';                   //      Hvis error-koden er under 10, skriv "0" til pc
+        fullError += errorCode;
+        alertPython(fullError, true);                              //      Skriv error-kode til pc
+        
+        //if (seriellKomunikasjon) {Serial.println("102");}
         uint32_t curTimeE = millis();                           //      Nåværende tid
         if (curTimeE - prevTimeE >= nextDelayE)                 //      Hvis tid siden forrige blink er større eller lik delay
         {

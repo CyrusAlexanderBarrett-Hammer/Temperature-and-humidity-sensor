@@ -2,15 +2,18 @@
 const uint32_t seriellTimeoutMillis = 0;                        // Timeout, hvis ikke kontakt med pc (0: ingen timeout, 120000:2 min)
 uint32_t pwmDelay = 1000;                                       // Tid mellom pwm-avlesing
 uint32_t fuktighetDelay = 20;                                 // Tid mellom avlesing fra fuktighetssensor
-uint32_t temperaturDelay = 20;                                // Tid mellom avlesing fra temperaturkontroller
+uint32_t temperaturDelay = 200;                                // Tid mellom avlesing fra temperaturkontroller
+uint32_t messageDelay = 200;                                          //Spam filter timeout duration
 uint32_t SensorErrorDelay = 6000;
+
+unsigned long currentTime;
 
 
 // Tilkoblede enheter:
 bool seriellKomunikasjon = 1;                                   // Tilkoblet pc?
 bool klokke = 1;                                                // Er klokke tilkoblet? Krever seriell
 bool fuktighet = 1;                                             // Er fuktighetssensor tilkoblet? Krever seriell
-bool temperatur = 1;                                            // Er temperatursensor tilkoblet? Krever seriell
+bool temperatur = 0;                                            // Er temperatursensor tilkoblet? Krever seriell
 bool shtTemperatur = 1;                                         // Print temperatur fra SHT av/på. Dette vil skje uansett om thermocouple brukes.
 bool input24 = 0;                                               // Er 5-24V PWM-inngang koblet til
 bool input2 = 0;                                                // Er 2-5V PWM-inngang koblet til
@@ -58,6 +61,7 @@ Adafruit_MAX31856 maxthermo = Adafruit_MAX31856(SS);            // Temperaturkon
 uint32_t previousPWM;                                           // Tid siden forrige pwm-avlesing
 uint32_t previousFukt;                                          // Tid siden forrige avlesing av fuktighetssensor
 uint32_t previousTemp;                                          // Tid siden forrige avlesing av temperaturkontroller
+uint32_t previousMessage;                                       // Spam filter to avoid buffer overrun when sendimng messages
 uint32_t previousErrChk;                                        // Tid siden siste error-avlesing av sensorer
 
 //annet
