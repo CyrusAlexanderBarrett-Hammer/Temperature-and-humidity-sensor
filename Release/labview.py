@@ -340,6 +340,8 @@ def run(labview = True, testCase = False):
             serialConnectivity = CheckComStatus()
 
     data[3] = userMessage
+    data[0] = str(data[0])
+    data[1] = str(data[1])
 
     print("Run done")
     return(data)
