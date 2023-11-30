@@ -77,6 +77,8 @@ def setup(labview = True, datalogging = False):
 
 
 def run(labview = True, testCase = False):
+    stringDataOnly = True
+
 
     #NOTE: TEST FOR DELTATIME OF FUNCTION EXECUTE SPEED IMPACT OF INCREASING POOL SIZE. How many data pieces to store in incoming data pool
 
@@ -340,8 +342,16 @@ def run(labview = True, testCase = False):
             serialConnectivity = CheckComStatus()
 
     data[3] = userMessage
-    data[0] = str(data[0])
-    data[1] = str(data[1])
+
+
+    if labview == True:
+        for i in data:
+            if i is None:
+                i == "NaN"
+                
+    if stringDataOnly:
+        data[0] = str(data[0])
+        data[1] = str(data[1])
 
     print("Run done")
     return(data)
