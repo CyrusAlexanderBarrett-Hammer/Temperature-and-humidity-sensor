@@ -1,7 +1,7 @@
 #For next time: Way more function based (and object oriented?)
-import random
 import time
 import re
+import math
 import locale
 import sys
 import traceback
@@ -79,7 +79,7 @@ def setup(labview = True, datalogging = False):
 
 
 def run(labview = True, testCase = False):
-    stringDataOnly = True
+    stringDataOnly = False
 
 
     #NOTE: TEST FOR DELTATIME OF FUNCTION EXECUTE SPEED IMPACT OF INCREASING POOL SIZE. How many data pieces to store in incoming data pool
@@ -476,6 +476,7 @@ def CheckComStatus(retries = 50, timeout = 2):
         print("All COM recovery attempts failed XX")
         checkComStatusAttempt = 0
         return "Failed"
+    
     
     
 # setup(False)
