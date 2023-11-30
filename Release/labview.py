@@ -360,7 +360,11 @@ def run(labview = True, testCase = False):
         
 
     print("Run done")
-    return(data)
+    if labview:
+        return(index[0], index[1], index[2], index[3])
+
+    else:
+        return(data)
 
 
 
