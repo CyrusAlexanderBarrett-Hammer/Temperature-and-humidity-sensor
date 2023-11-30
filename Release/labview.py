@@ -26,6 +26,8 @@ def exit():
     # interval = re.sub(r"[,]+", ".", interval)
     # interval = float(interval)
 
+data = [0, 0, "", ""] #Data sent to calling program. It's global to just send previously recieved data if not recieved when the run function is called.
+
 def setup(labview = True, datalogging = False):
     global logName
     global startTime
@@ -110,7 +112,6 @@ def run(labview = True, testCase = False):
     userMessage = ""
 
     incoming = "    "
-    data = [0, 0, "", ""]
 
     #Avoids false error first time, serial is guaranteed to work properly
     dataValid = True
@@ -141,7 +142,7 @@ def run(labview = True, testCase = False):
     #     print("Humidity is " + str(type(readHumidity)))
 
     try:
-        maxBufferSize = 500 #Flush if above to make reading faster. About ten bytes per line from serial USB
+        maxBufferSize = 50 #Flush if above to make reading faster. About ten bytes per line from serial USB
 
         data_pools = {
             '04': None,  # Temperature
@@ -159,9 +160,12 @@ def run(labview = True, testCase = False):
                 return data_pools.get(data_type) != readData
 
 
-        if ser.in_waiting > maxBufferSize:
-            ser.flushInput()
-            ser.flushOutput()
+        # while ser.in_waiting > maxBufferSize:
+        #     ser.readline()
+        #     # ser.flushInput()
+        #     # ser.flushOutput()
+        # readCharacter = ""
+        # print("Waiting: " + str(ser.in_waiting))
 
         incomingPool = []
         while ser.in_waiting:
@@ -170,6 +174,7 @@ def run(labview = True, testCase = False):
             incomingPool.append(incomingData)
             print(f"Read data: {incomingPool[len(incomingPool) - 1]}")  # Debugging print
         incomingPool.reverse()
+        print("Incoming pool is" + str(incomingPool))
 
         for readData in incomingPool:
             if is_new_data(readData, data_pools):
@@ -278,7 +283,7 @@ def run(labview = True, testCase = False):
             #humidity = str(humidity)
             #if decimal == ",":
             #    humidity = humidity.replace(".", ",")
-        data[0] = humidity
+            data[0] = humidity
 
         #Clean pure number as string
         temperature = CleanReading(readTemperature)
@@ -293,7 +298,7 @@ def run(labview = True, testCase = False):
             # temperature =  str(temperature)
             # if decimal == ",":
             #     temperature = temperature.replace(".", ",")
-        data[1] = temperature
+            data[1] = temperature
 
         if(datalogging == True):
             #.replace(".", ",")
@@ -350,7 +355,7 @@ def run(labview = True, testCase = False):
 
 
     for index in range(len(data)):
-        if stringDataOnly and data[index] == "None":
+        if stringDataOnly and data[index] == "None" and labview:
             data[index] = "NaN"
         
 
@@ -471,6 +476,7 @@ def CheckComStatus(retries = 50, timeout = 2):
         print("All COM recovery attempts failed XX")
         checkComStatusAttempt = 0
         return "Failed"
+    
     
 # setup(False)
 # while True:
