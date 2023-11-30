@@ -343,18 +343,20 @@ def run(labview = True, testCase = False):
 
     data[3] = userMessage
 
-
-    if labview == True:
-        for i in data:
-            if i is None:
-                i == "NaN"
                 
     if stringDataOnly:
-        data[0] = str(data[0])
-        data[1] = str(data[1])
+        for index in range(len(data)):
+            data[index] = str(data[index])
+
+
+    for index in range(len(data)):
+        if stringDataOnly and data[index] == "None":
+            data[index] = "NaN"
+        
 
     print("Run done")
     return(data)
+
 
 
 def CleanReading(reading, startLetters = 2, endLetters = 0):
