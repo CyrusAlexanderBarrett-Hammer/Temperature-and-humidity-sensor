@@ -26,7 +26,7 @@ def exit():
     # interval = re.sub(r"[,]+", ".", interval)
     # interval = float(interval)
 
-data = [0, 0, "", ""] #Data sent to calling program. It's global to just send previously recieved data if not recieved when the run function is called.
+data = [float(0), float(0), "", ""] #Data sent to calling program. It's global to just send previously recieved data if not recieved when the run function is called.
 
 def setup(labview = True, datalogging = False):
     global logName
@@ -51,6 +51,7 @@ def setup(labview = True, datalogging = False):
 
     if SetupCOM() == "Failed":
         return("USB connection failed")
+        
 
     readStartTime = "    "
     startTime = "    "
@@ -142,6 +143,7 @@ def run(labview = True, testCase = False):
     #     print("Humidity is " + str(type(readHumidity)))
 
     try:
+        
         maxBufferSize = 50 #Flush if above to make reading faster. About ten bytes per line from serial USB
 
         data_pools = {
@@ -170,6 +172,7 @@ def run(labview = True, testCase = False):
         incomingPool = []
         while ser.in_waiting:
             incomingData = ser.readline().decode().strip()
+            print("Heya: " + str(incomingData))
             #print(ser.readline())
             incomingPool.append(incomingData)
             print(f"Read data: {incomingPool[len(incomingPool) - 1]}")  # Debugging print
@@ -213,7 +216,7 @@ def run(labview = True, testCase = False):
     
     print("Exited data collection sequence")
 
-
+    
 
 
     if incoming[0:3] == "102":
@@ -265,25 +268,32 @@ def run(labview = True, testCase = False):
         outputDeltaStartTimeDataTime = None
 
         if dataTime is not None:
-            dataTime = datetime.strptime(dataTime, "%d/%m/%Y %H:%M:%S")
-            deltaStartTimeDataTime = dataTime - startTime #Accurate stopwatch
-            outputDeltaStartTimeDataTime = str(deltaStartTimeDataTime)
-            if(decimal == ","):
-                outputDeltaStartTimeDataTime = str(outputDeltaStartTimeDataTime).replace(".", ",")
+            try:
+                dataTime = datetime.strptime(dataTime, "%d/%m/%Y %H:%M:%S")
+                deltaStartTimeDataTime = dataTime - startTime #Accurate stopwatch
+                outputDeltaStartTimeDataTime = str(deltaStartTimeDataTime)
+                if(decimal == ","):
+                    outputDeltaStartTimeDataTime = str(outputDeltaStartTimeDataTime).replace(".", ",")
+            except:
+                pass
 
-        data[2] = outputDeltaStartTimeDataTime
+        if outputDeltaStartTimeDataTime is not None:
+            data[2] = outputDeltaStartTimeDataTime
 
         #Clean pure number as string
         humidity = CleanReading(readHumidity)
 
         if humidity is not None:
             #We need number with two decimals
-            humidity = float(humidity)
-            humidity = humidity / 100
-            #humidity = str(humidity)
-            #if decimal == ",":
-            #    humidity = humidity.replace(".", ",")
-            data[0] = humidity
+            try:
+                humidity = float(humidity)
+                humidity = humidity / 100
+                #humidity = str(humidity)
+                #if decimal == ",":
+                #    humidity = humidity.replace(".", ",")
+                data[0] = humidity
+            except:
+                pass
 
         #Clean pure number as string
         temperature = CleanReading(readTemperature)
@@ -292,13 +302,16 @@ def run(labview = True, testCase = False):
 
         print("Temperature is " + str(temperature))
         if temperature is not None:
-            #We need number with two decimals, reading is a whole number where last two digits should have been decimals
-            temperature = float(temperature)
-            temperature = temperature / 100
-            # temperature =  str(temperature)
-            # if decimal == ",":
-            #     temperature = temperature.replace(".", ",")
-            data[1] = temperature
+            try:
+                #We need number with two decimals, reading is a whole number where last two digits should have been decimals
+                temperature = float(temperature)
+                temperature = temperature / 100
+                # temperature =  str(temperature)
+                # if decimal == ",":
+                #     temperature = temperature.replace(".", ",")
+                data[1] = temperature
+            except:
+                pass
 
         if(datalogging == True):
             #.replace(".", ",")
@@ -346,7 +359,8 @@ def run(labview = True, testCase = False):
             print("Failed to empty buffer and attempting to reconnect")
             serialConnectivity = CheckComStatus()
 
-    data[3] = userMessage
+    if userMessage is not None:
+        data[3] = userMessage
 
                 
     if stringDataOnly:
@@ -357,13 +371,18 @@ def run(labview = True, testCase = False):
     for index in range(len(data)):
         if stringDataOnly and data[index] == "None" and labview:
             data[index] = "NaN"
-        
+        print(data[index])
+        #Only a test, delete delete as soon as possible
+        # if type(data[index]) is float:
+        #     data[index] = round(data[index])
+
 
     print("Run done")
     if labview:
-        return(index[0], index[1], index[2], index[3])
+        return (float(data[0]), float(data[1]), data[2], data[3])
 
     else:
+        print(type(data[1]))
         return(data)
 
 
@@ -485,6 +504,6 @@ def CheckComStatus(retries = 50, timeout = 2):
     
 # setup(False)
 # while True:
-#     data = run(False)
+#     outputedData = run(True)
 #     for i in range(10):
-#         print(data)
+#         print(outputedData)

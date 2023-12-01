@@ -16,7 +16,7 @@ HUMIDITY SENSOR FUNCTIONALITY
 
 Componets used: Arduino Micro, DS1307 clock, MAX31856 temperature sensor for respective versions, and SHT85 humidity sensor
 
-labview.py is the script run from labview using "open python session", "python node", and "close python session". The function "setup" is run once and sets up the serial communication, returning a string with startup time and date. The "run" function returns an array of strings and floats with every time it is run. Current Humidity: Index 0. Current temperature: Index 1. Uptime: Index 2. Messages from program: Index 3. Humidity and temperature is float, rest is string. All can be None if there's no data available.
+labview.py is the script run from labview using "open python session", "python node", and "close python session". The function "setup" is run once and sets up the serial communication, returning a string with startup time and date. The "run" function returns a tuple of strings and floats with every time it is run, if the specific data is available. Otherwise, it returns previously available data. Current Humidity: Index 0. Current temperature: Index 1. Uptime: Index 2. Messages from program: Index 3. Humidity and temperature is float, rest is string.
 
 standalone.py displays temperature and humidity in an interface with a user set time interval and optional datalogging to a .txt file with timestamp, as a standalone application
 
@@ -41,7 +41,7 @@ Coming:
 
     Compensate for daylight saving time Arduino side
 
-    All available data values returned at once instead of None when not available, depending on how many wants it
+    All available data values returned at once or alternatively as None if not available instead of newest data update, depending on how many wants it
 
 
 Program runs as long as computer is not in sleep mode
@@ -52,8 +52,7 @@ The minimal measurement time interval for both programs is 200 milliseconds on t
 
 If USB is removed, the program will recover if USB is reconnected within the timeout of 100 seconds
 
-If you get a lot of None output, the data is not available yet. Reducing the data interval with some milliseconds solves the issue.
-
+The USB can only be used by one device/virtual machine at a time. More will lock the temperature and humidity sensor and cause it to hiccup.
 
 ---------------
 TROUBLESHOOTING
@@ -66,6 +65,10 @@ The program crashes:
     Program cannot run while computer is in sleep mode
     Temperature and humidity sensor device is not connected
     In the standalone program, the "run" button has been clicked twice. Try reconnecting the USB.
+
+Temperature/humidity sensor is stuck in setup with frantic LED blinks:
+    Only one device/virtual machine can access the measuring device's serial port at a time. Close one setup and run function session and try setup again.
+
 
 
 Non-frantic LED flashes indicates any other error
