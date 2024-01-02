@@ -55,8 +55,6 @@ def setup(labview = True, datalogging = False):
 
     readStartTime = "    "
     startTime = "    "
-
-    print(ser)
     
     while not readStartTime[0:2] == "02" and not readStartTime == None:
         try:
@@ -65,8 +63,6 @@ def setup(labview = True, datalogging = False):
             serialConnectivity = CheckComStatus()
         if incoming[0] == "0" and incoming[1] == "2": #Time label "02":
             readStartTime = incoming
-    #startTime = "01/11/2023 10:33:04"
-    print("Late: " + str(startTime))
     startTime = CleanReading(readStartTime)
     startTime = datetime.strptime(startTime, "%d/%m/%Y %H:%M:%S") #Formats to datatime from  Arduino string, allowing math
 
@@ -76,7 +72,7 @@ def setup(labview = True, datalogging = False):
     # re.sub(r'(\.\d)\d*', r'\1', outputStartupTime)
     outputStartTime = startTime.strftime("%d/%m/%Y %H:%M:%S")
     print("Setup done")
-    return(outputStartTime)  # Outputs example: 2023-08-21 15:34:17.4
+    return(outputStartTime, ser.port)  # Outputs example: 2023-08-21 15:34:17.4
 
 
 def run(labview = True, testCase = False):
@@ -118,8 +114,6 @@ def run(labview = True, testCase = False):
     dataValid = True
     serialConnectivity = "Successful"
 
-
-    print("Run initiated")
     
     readStartTime = time.time()
     #Look for temperature and humidity or error indicator "102" until recieved. Other error handling from Arduino can be put here too. In other words, read any input from Arduino
@@ -172,12 +166,9 @@ def run(labview = True, testCase = False):
         incomingPool = []
         while ser.in_waiting:
             incomingData = ser.readline().decode().strip()
-            print("Heya: " + str(incomingData))
             #print(ser.readline())
             incomingPool.append(incomingData)
-            print(f"Read data: {incomingPool[len(incomingPool) - 1]}")  # Debugging print
         incomingPool.reverse()
-        print("Incoming pool is" + str(incomingPool))
 
         for readData in incomingPool:
             if is_new_data(readData, data_pools):
@@ -196,7 +187,6 @@ def run(labview = True, testCase = False):
 
         print(data_pools)
         for key, value in data_pools.items(): #Assigning each type of reading data to correct variable if it's there, plus errors
-            print("Data: " + str(key))
             if key == "02":
                 readDataTime = value
             elif key == "03":
