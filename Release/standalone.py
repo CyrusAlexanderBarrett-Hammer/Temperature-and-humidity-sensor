@@ -34,7 +34,7 @@ def updateData(interval):
 
     global updateDataJob
 
-    data = (run(False, True))
+    data = (run(False, False))
 
     humidity.config(text="Humidity: {}".format(str(data[0])))
     temperature.config(text="Temperature: {}".format(str(data[1])))
@@ -77,45 +77,7 @@ def submit():
     except Exception as e:
         print(traceback.print_exc())
 
-#To be deleted, fucked, and expired
-def runThis():
-    print("RUnning runThis")
-    global updateDataJob
 
-    cancelJob()
-
-    interval = ""
-
-    try:
-        interval = intervalIn.get()
-        datalogging = dataloggingIn.get()
-        
-        interval = str(interval)
-        interval = interval.replace(",", ".")
-        interval = float(interval)
-        datalogging = datalogging.lower()
-        if datalogging == "y" or datalogging == "n":
-    
-            #Check if user input contains a y or n, and set the datalogging variables accordingly
-            if datalogging == "y":
-                datalogging = True
-
-            elif datalogging == "n":
-                datalogging = False
-
-            #time.sleep(60)
-            labview.interuptSetup = False
-            print("Running setup")
-            updateData(interval)
-
-    except:
-        pass
-
-
-def stop():
-    global updateDataJob
-
-    cancelJob()
 
 window = tk.Tk()
 
@@ -134,16 +96,8 @@ dataloggingIn.pack()
 submitButton = tk.Button(window, text = "Run", command = submit)
 submitButton.pack()
 
-stopButton = tk.Button(window, text = "Stop", command = stop)
+stopButton = tk.Button(window, text = "Stop", command = cancelJob)
 stopButton.pack()
-
-# #Fuck off!
-# button2 = tk.Button(window, text = "Setup", command = submit)
-# button2.pack()
-
-# #You too!
-# button3 = tk.Button(window, text = "Run", command = runThis)
-# button3.pack()
 
 
 humidity = tk.Label(window, text="Humidity: {}".format(data[0]))
