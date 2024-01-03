@@ -16,7 +16,7 @@ HUMIDITY SENSOR FUNCTIONALITY
 
 Componets used: Arduino Micro, DS1307 clock, MAX31856 temperature sensor for respective versions, and SHT85 humidity sensor
 
-labview.py is the script run from labview using "open python session", "python node", and "close python session". The function "setup" is run once and sets up the serial communication, returning a string with startup time and date. The "run" function returns a tuple of strings and floats with every time it is run, if the specific data is available. Otherwise, it returns previously available data. Current Humidity: Index 0. Current temperature: Index 1. Uptime: Index 2. Messages from program: Index 3. Humidity and temperature is float, rest is string.
+labview.py is the script run from labview using "open python session", "python node", and "close python session". The function "setup" is run once and sets up the serial communication, returning a tuple(cluster) with startup time and date(string) and automatically selected COM-port. The "run" function returns a cluster of strings and floats with every time it is run, if the specific data is available. Otherwise, it returns previously available data. Current Humidity: Index 0. Current temperature: Index 1. Uptime: Index 2. Messages from program: Index 3. Humidity and temperature is float, rest is string.
 
 standalone.py displays temperature and humidity in an interface with a user set time interval and optional datalogging to a .txt file with timestamp, as a standalone application
 
@@ -39,9 +39,7 @@ Coming:
 
     Device hardware version, user set time interval, optional datalogging, and what connections are being used can be set from the configuration file settings.(extension). Device hardware version 1 is with both MAX31856 and SHT85 (more accurate temperature), and 2 is only SHT85 (more tidy).
 
-    Compensate for daylight saving time Arduino side
-
-    All available data values returned at once or alternatively as None if not available instead of newest data update, depending on how many wants it
+    All available data values returned at once or alternatively as None if not available instead of newest data update, depending if anyone wants it
 
 
 Program runs as long as computer is not in sleep mode
