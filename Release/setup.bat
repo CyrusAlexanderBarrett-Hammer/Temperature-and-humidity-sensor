@@ -131,9 +131,7 @@ pause
 echo Installing required Python libraries...
 if exist %PIP_PATH% echo pip exists
 ::%PIP_PATH% install pyserial
-::%PIP_PATH% install serial
 ::%PIP_PATH% install tk
-%PYTHON_PATH%\python.exe -m pip install serial
 %PYTHON_PATH%\python.exe -m pip install pyserial
 %PYTHON_PATH%\python.exe -m pip install tk
 echo Libraries installed

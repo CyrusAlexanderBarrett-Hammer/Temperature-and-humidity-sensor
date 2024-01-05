@@ -61,6 +61,7 @@ def setup(labview = True, datalogging = False):
             incoming = str(ser.readline().decode().strip()) #Numbers recieved from Arduino
         except:
             serialConnectivity = CheckComStatus()
+        print("Ser is " + str(ser))
         if incoming[0] == "0" and incoming[1] == "2": #Time label "02":
             readStartTime = incoming
     startTime = CleanReading(readStartTime)
@@ -390,7 +391,9 @@ def SetupCOM():
     print("Entered SetupCOM()")
 
     incoming = ""
-    while not incoming == "01" or incoming[0:2] == "03":
+
+    COMfound = False
+    while not COMfound:
         try:
             comlist = serial.tools.list_ports.comports()    # Array of connected ports. Arduino might not be connected at startup, let's get the COM-list periodically
             for port in comlist:                            # Repeats for each connected port
@@ -405,8 +408,12 @@ def SetupCOM():
                 print("About to write")
                 serPort.write(bytes("10\n", "utf_8")) #Ping!
                 incoming = str(serPort.readline().decode().strip()) #Recieved 01?
-                print("Incoming is" + incoming)
+                if incoming == "01":
+                    COMfound = True
+                    break
+                print("Incoming is " + incoming)
                 print("Finished poll attempt")
+                print(COMfound)
 
         except:
             print("I am in SetupCOM. About to search for COM reconnect.")

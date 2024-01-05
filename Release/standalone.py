@@ -15,6 +15,7 @@ import tkinter as tk
 data = [0, 0, "", ""]
 
 updateDataJob = None
+setupRun = False
 
 def cancelJob():
     global updateDataJob
@@ -47,6 +48,7 @@ def updateData(interval):
 def submit():
     global updateDataJob
 
+    global setupRun
     cancelJob()
 
     interval = ""
@@ -71,7 +73,9 @@ def submit():
             #time.sleep(60)
             labview.interuptSetup = False
             print("Running setup")
-            setup(False, datalogging)
+            if not setupRun:
+                setup(False, datalogging)
+                setupRun = True
             updateData(interval)
 
     except Exception as e:
