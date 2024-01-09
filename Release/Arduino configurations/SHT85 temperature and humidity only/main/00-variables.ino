@@ -18,7 +18,7 @@ bool shtTemperatur = 1;                                         // Print tempera
 bool input24 = 0;                                               // Er 5-24V PWM-inngang koblet til
 bool input2 = 0;                                                // Er 2-5V PWM-inngang koblet til
 
-char mode = 2;                                                  // Mode 1 uses thermocouple for temperature and SHT85 for humidity, mode 2 uses SHT85 for both
+char mode = 2;
 
 // Skal Arduinoen gå til error ved veil i kode:
 bool CMD_Ugyldig = 0;                                           // Hvis ugyldig kode

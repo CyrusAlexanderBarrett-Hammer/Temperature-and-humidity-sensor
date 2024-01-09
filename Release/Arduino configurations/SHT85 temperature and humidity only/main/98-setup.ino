@@ -60,6 +60,7 @@ void setup()                                                    // Arduino setup
         {
             rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));     //          Sett klokke til klokkeslett ved kompilering av kode, ERSTATTES
         }
+        rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
     }
 
     // Temperaturkontroller
