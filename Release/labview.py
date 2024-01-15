@@ -28,7 +28,7 @@ def exit():
 
 data = [float(0), float(0), "", ""] #Data sent to calling program. It's global to just send previously recieved data if not recieved when the run function is called.
 
-def setup(labview = True, datalogging = False):
+def setup(comOverride = None, labview = True, datalogging = False):
     global logName
     global startTime
     global decimal
@@ -49,7 +49,7 @@ def setup(labview = True, datalogging = False):
         decimal = locale.localeconv()['decimal_point']
 
 
-    if SetupCOM() == "Failed":
+    if setupCOM(comOverride) == "Failed":
         return("USB connection failed")
         
 
@@ -60,11 +60,11 @@ def setup(labview = True, datalogging = False):
         try:
             incoming = str(ser.readline().decode().strip()) #Numbers recieved from Arduino
         except:
-            serialConnectivity = CheckComStatus()
+            serialConnectivity = checkComStatus()
         print("Ser is " + str(ser))
         if incoming[0] == "0" and incoming[1] == "2": #Time label "02":
             readStartTime = incoming
-    startTime = CleanReading(readStartTime)
+    startTime = cleanReading(readStartTime)
     startTime = datetime.strptime(startTime, "%d/%m/%Y %H:%M:%S") #Formats to datatime from  Arduino string, allowing math
 
     if datalogging == True:
@@ -196,14 +196,14 @@ def run(labview = True, testCase = False):
                 readTemperature = value
             elif key == "alerts":
                 for i in value:
-                    x = CleanReading(i, 5, 0)
+                    x = cleanReading(i, 5, 0)
                     if not x in activeAlerts: #We only need one of each alert type per round!
                         activeAlerts.append(x)
 
     except Exception:
         traceback.print_exc()
         print("Whoops, data serial exception. Going to search for COM reconnect")
-        serialConnectivity = CheckComStatus()
+        serialConnectivity = checkComStatus()
     
     print("Exited data collection sequence")
 
@@ -255,7 +255,7 @@ def run(labview = True, testCase = False):
 
         
         #Clean pure number as string
-        dataTime = CleanReading(readDataTime)
+        dataTime = cleanReading(readDataTime)
         outputDeltaStartTimeDataTime = None
 
         if dataTime is not None:
@@ -272,7 +272,7 @@ def run(labview = True, testCase = False):
             data[2] = outputDeltaStartTimeDataTime
 
         #Clean pure number as string
-        humidity = CleanReading(readHumidity)
+        humidity = cleanReading(readHumidity)
 
         if humidity is not None:
             #We need number with two decimals
@@ -287,7 +287,7 @@ def run(labview = True, testCase = False):
                 pass
 
         #Clean pure number as string
-        temperature = CleanReading(readTemperature)
+        temperature = cleanReading(readTemperature)
         for i in range(5):
             print("Cleaned: " + str(readTemperature))
 
@@ -348,7 +348,7 @@ def run(labview = True, testCase = False):
             print("Emptied buffer 2")
         except:
             print("Failed to empty buffer and attempting to reconnect")
-            serialConnectivity = CheckComStatus()
+            serialConnectivity = checkComStatus()
 
     if userMessage is not None:
         data[3] = userMessage
@@ -378,7 +378,7 @@ def run(labview = True, testCase = False):
 
 
 
-def CleanReading(reading, startLetters = 2, endLetters = 0):
+def cleanReading(reading, startLetters = 2, endLetters = 0):
     if reading is not None:
         #Clean pure number as string
         reading = reading[startLetters:]
@@ -387,7 +387,7 @@ def CleanReading(reading, startLetters = 2, endLetters = 0):
     return reading
 
 
-def SetupCOM():
+def setupCOM(comOverride):
     print("Entered SetupCOM()")
 
     incoming = ""
@@ -395,13 +395,33 @@ def SetupCOM():
     COMfound = False
     while not COMfound:
         try:
-            comlist = serial.tools.list_ports.comports()    # Array of connected ports. Arduino might not be connected at startup, let's get the COM-list periodically
-            for port in comlist:                            # Repeats for each connected port
-                print("Polling COM ports")
-                port = str(port)
-                match = re.search(r'COM\d+', port)          #Checks for a match for "COM" + "number"...
-                comPort = match.group()                     #...and converts from match datatype to string
-                serPort = serial.Serial(comPort, 115200, timeout = 2)
+            if comOverride is None:                             # Automatic connection if user have not manually specified COM port
+                comlist = serial.tools.list_ports.comports()    # Array of connected ports. Arduino might not be connected at startup, let's get the COM-list periodically
+                print(comlist)
+                # serPort = serial.Serial("COM1", 115200, timeout = 2) #Dummy COM to resolve bug
+                for port in comlist:                            # Repeats for each connected port
+                    #This is very interesting. Run this after the first COM connect attempt, and port ocuupied error does not come. It's as if it needs some dummy connection attempt first...
+                    print("Polling COM ports")
+                    port = str(port)
+                    match = re.search(r'COM\d+', port)          #Checks for a match for "COM" + "number"...
+                    comPort = match.group()                     #...and converts from match datatype to string
+                    serPort = serial.Serial(comPort, 115200, timeout = 2)
+                    serPort.close()
+                    serPort.open()
+                    #Ping arduino
+                    print("About to write")
+                    serPort.write(bytes("10\n", "utf_8")) #Ping!
+                    incoming = str(serPort.readline().decode().strip()) #Recieved 01?
+                    if incoming == "01":
+                        COMfound = True
+                        break
+                    print("Incoming is " + incoming)
+                    print("Finished poll attempt")
+                    print(COMfound)
+            else:
+                #Boilerplate? Make function maybe?
+                print(comOverride)
+                serPort = serial.Serial("COM9", 115200, timeout = 2)
                 serPort.close()
                 serPort.open()
                 #Ping arduino
@@ -414,20 +434,24 @@ def SetupCOM():
                 print("Incoming is " + incoming)
                 print("Finished poll attempt")
                 print(COMfound)
+            
 
-        except:
-            print("I am in SetupCOM. About to search for COM reconnect.")
-            if CheckComStatus() == "Failed":
-                print("COM status failed in SetupCOM")
-                return "Failed"
+        except Exception as e:
+            print(e)
+            # print("I am in setupCOM. About to search for COM reconnect.")
+            # if checkComStatus() == "Failed":
+            #     print("COM status failed in setupCOM")
+            #     return "Failed"
+            pass
+
     global ser
     ser = serPort
-    print("Flushed the port in SetupCOM")
+    print("Flushed the port in setupCOM")
     ser.flushInput()
     ser.flushOutput()
 
 
-def ConnectivityFaultHandler(): #Attempts to reestablish COM ports
+def connectivityFaultHandler(): #Attempts to reestablish COM ports
     print("Entered the connectivity fault handler")
     incoming = "" 
     ser.timeout = 20
@@ -450,7 +474,7 @@ def ConnectivityFaultHandler(): #Attempts to reestablish COM ports
 
 
 
-def CheckComStatus(retries = 50, timeout = 2):
+def checkComStatus(retries = 50, timeout = 2):
     print("Entered the COM reconnect search")
     global checkComStatusAttempt
 
@@ -468,7 +492,7 @@ def CheckComStatus(retries = 50, timeout = 2):
             time.sleep(timeout)
             
             print("About to enter the connectivity fault handler in the COM reconnect searcher")
-            ConnectivityFaultHandler() #Arduino is waiting for COM setup ping!
+            connectivityFaultHandler() #Arduino is waiting for COM setup ping!
             checkComStatusAttempt = 0
             print("About to return successful from the COM reconnect searcher")
             return "Successful"
