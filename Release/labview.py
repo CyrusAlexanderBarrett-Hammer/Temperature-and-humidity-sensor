@@ -2,6 +2,7 @@
 import time
 import re
 import math
+import random
 import locale
 import sys
 import traceback
@@ -395,33 +396,41 @@ def setupCOM(comOverride):
     COMfound = False
     while not COMfound:
         try:
+            comlist = serial.tools.list_ports.comports()    # Array of connected ports. Arduino might not be connected at startup, let's get the COM-list periodically
+            print(comlist)
+            portlist = []                                   #COMs, narrowed down to names
+            for com in comlist:
+                # port = str(port)
+                # match = re.search(r'COM\d+', port)          #Checks for a match for "COM" + "number"...
+                # comPort = match.group()                     #...and converts from match datatype to string
+                portlist.append(str(com.name))
+            print(portlist)
+
             if comOverride is None:                             # Automatic connection if user have not manually specified COM port
-                comlist = serial.tools.list_ports.comports()    # Array of connected ports. Arduino might not be connected at startup, let's get the COM-list periodically
-                print(comlist)
-                # serPort = serial.Serial("COM1", 115200, timeout = 2) #Dummy COM to resolve bug
-                for port in comlist:                            # Repeats for each connected port
-                    #This is very interesting. Run this after the first COM connect attempt, and port ocuupied error does not come. It's as if it needs some dummy connection attempt first...
-                    print("Polling COM ports")
-                    port = str(port)
-                    match = re.search(r'COM\d+', port)          #Checks for a match for "COM" + "number"...
-                    comPort = match.group()                     #...and converts from match datatype to string
-                    serPort = serial.Serial(comPort, 115200, timeout = 2)
-                    serPort.close()
-                    serPort.open()
-                    #Ping arduino
-                    print("About to write")
-                    serPort.write(bytes("10\n", "utf_8")) #Ping!
-                    incoming = str(serPort.readline().decode().strip()) #Recieved 01?
-                    if incoming == "01":
-                        COMfound = True
-                        break
-                    print("Incoming is " + incoming)
-                    print("Finished poll attempt")
-                    print(COMfound)
+                print(portlist)
+
+                port = portlist[random.randint(0, len(portlist) - 1)] #Alternative to iterating, avoids getting stuck on same COM on error
+                serPort = serial.Serial(port, 115200, timeout = 2)
+                serPort.close()
+                serPort.open()
+                #Ping arduino
+                print("About to write")
+                serPort.write(bytes("10\n", "utf_8")) #Ping!
+                incoming = str(serPort.readline().decode().strip()) #Recieved 01?
+                if incoming == "01":
+                    COMfound = True
+                    break
+                print("Incoming is " + incoming)
+                print("Finished poll attempt")
+                print(COMfound)
+
+
             else:
                 #Boilerplate? Make function maybe?
-                print(comOverride)
-                serPort = serial.Serial("COM9", 115200, timeout = 2)
+                # print(excludedPort)
+                dummyPort = portlist[random.randint(0, len(portlist) - 1)] #Alternative to fixed COM dummy, avoids getting stuck on same COM on error
+                serPort = serial.Serial(dummyPort, 115200, timeout = 2) #Dummy COM initiation to resolve bug
+                serPort = serial.Serial(comOverride, 115200, timeout = 2)
                 serPort.close()
                 serPort.open()
                 #Ping arduino
