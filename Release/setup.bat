@@ -97,11 +97,11 @@ for /f "tokens=2,* skip=2" %%a in ('reg query "HKEY_LOCAL_MACHINE\SYSTEM\Current
     set "SystemPath=%%b"
 )
 
-set "UserPath=%UserPath%;%PYTHON_PATH%"
-set "UserPath=%UserPath%;%PYTHON_PATH%\Scripts"
+set "UserPath=%PYTHON_PATH%;%UserPath%"
+set "UserPath=%PYTHON_PATH%\Scripts;%UserPath%"
 
-set "SystemPath=%UserPath%;%PYTHON_PATH%"
-set "SystemPath=%UserPath%;%PYTHON_PATH%\Scripts"
+set "SystemPath=%PYTHON_PATH%;%SystemPath%"
+set "SystemPath=%PYTHON_PATH%\Scripts;%SystemPath%"
 
 :: Check for PATH length
 if defined UserPath if "!LongPathsEnabled!"=="0x1" if "!UserPath:~0,1024!" neq "!UserPath!" (
@@ -121,8 +121,8 @@ setx PATH "%UserPath%"
 setx /M PATH "%SystemPath%"
 
 :: Call PowerShell command to remove duplicates from PATH
-for /f "delims=" %%i in ('powershell -command "[String]::Join(';', (([System.Environment]::GetEnvironmentVariable('PATH', [System.EnvironmentVariableTarget]::User) -split ';') | Sort-Object -Unique))"') do set UserPath=%%i
-
+for /f "delims=" %%i in ('powershell -command "$path = [System.Environment]::GetEnvironmentVariable('PATH', [System.EnvironmentVariableTarget]::User) -split ';'; [Array]::Reverse($path); $unique = $path | Sort-Object -Unique; [Array]::Reverse($unique); $finalPath = $unique -join ';'; $finalPath"') do set UserPath=%%i
+for /f "delims=" %%i in ('powershell -command "$path = [System.Environment]::GetEnvironmentVariable('PATH', [System.EnvironmentVariableTarget]::Machine) -split ';'; [Linq.Enumerable]::Reverse($path); $unique = $path | Sort-Object -Unique; [Linq.Enumerable]::Reverse($unique); $finalPath = $unique -join ';'; $finalPath"') do set SystemPath=%%i
 :: If everything is ok, set the new PATH
 echo PATH set
 pause
