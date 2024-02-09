@@ -27,11 +27,6 @@ The function "setup" is run once and sets up the serial communication, returning
 | 1         | Connected serial COM port | String             |
 | 2         | User message              | String             |
 | 3         | Error alarm               | Boolean True/False |
-|           |                           |                    |
-|           |                           |                    |
-|           |                           |                    |
-|           |                           |                    |
-|           |                           |                    |
 
 Selected COM can be overwritten by sending a string with name (example COM4) as an optional first input parameter, if the autocom fails (expand return type/return menu downwards in Labview for input parameters).
 
@@ -44,11 +39,7 @@ The "run" function returns a cluster of data with every time it is run, if the s
 | 1         | Temperature     | Float              |
 | 2         | Uptime          | String             |
 | 3         | User message    | String             |
-| 4         | Error alarm | Boolean True/False |
-|           |                 |                    |
-|           |                 |                    |
-|           |                 |                    |
-|           |                 |                    |
+| 4         | Error alarm     | Boolean True/False |
 
 standalone.py displays temperature and humidity in an interface with a user set COM override, time interval, and optional datalogging to a .txt file with timestamp, as a standalone application
 
