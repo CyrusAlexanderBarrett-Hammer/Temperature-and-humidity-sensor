@@ -14,8 +14,9 @@ import serial.tools.list_ports
 
 import tkinter as tk
 
+
 #(datalogging, startTime, logName, decimal, datalog) = (False, datetime(datetime.min.year, datetime.min.month, datetime.min.day), "", "", "") #In case of labview not accessing variables outside functions
-data = [0, 0, "", ""]
+data = [0, 0, "", "", False]
 
 updateDataJob = None
 setupRun = False
@@ -53,6 +54,7 @@ def updateData(interval):
     temperature.config(text="Temperature: {}".format(str(data[1])))
     deltaStartupTime.config(text="Time since startup: {}".format(data[2]))
     message.config(text="Message: {}".format(data[3]))
+    errorIndicator.config(text="Error: {}".format(data[4]))
 
     # Schedule the next update
     updateDataJob = window.after(int(interval * 1000), updateData, interval)# Update every 1000 milliseconds (1 second). Tkinter handles the recursive to avoid memory leak.
@@ -101,10 +103,13 @@ def submit():
             #time.sleep(60)
             labview.interuptSetup = False
             print("Running setup")
+            setupErrorIndicator = False
             if not setupRun:
-                setup(comOverride, False, datalogging)
-                setupRun = True
-            updateData(interval)
+                _, _, _, setupErrorIndicator = setup(comOverride, False, datalogging)
+                if setupErrorIndicator == False:
+                    setupRun = True
+            if setupErrorIndicator == False:
+                updateData(interval)
 
     except Exception as e:
         print(traceback.print_exc())
@@ -114,6 +119,7 @@ def submit():
 window = tk.Tk()
 
 # Create input fields
+
 comOverrideInText = tk.Label(window, text="    Manual COM override in case of Setup unsuccessful (example COM4)? Leave empty for auto.    ") #Does the decimal point conversion across regions work in the labview.py script?
 comOverrideInText.pack()
 comOverrideIn = tk.Entry(window)
@@ -148,5 +154,8 @@ deltaStartupTime.pack()
 
 message = tk.Label(window, text="Message: {}".format(data[3]))
 message.pack()
+
+errorIndicator = tk.Label(window, text="Error: {}".format(data[4]))
+errorIndicator.pack()
 
 window.mainloop()

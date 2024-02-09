@@ -4,7 +4,7 @@ My gmail address: cyrusalexander2004@gmail.com
 
 
 ---------------
-HSE AND ENVIRONMENT
+### HSE AND ENVIRONMENT
 
 SAFETY NOTICES: The 3D-printed box looses shape in contact with lots of hot water. Test indicates that a strong chamical like aceton fumes over extended periods of time melts the device away, but methanol and the like should be fine.
 
@@ -12,34 +12,71 @@ Dispose as electrical waste
 
 
 ---------------
-HUMIDITY SENSOR FUNCTIONALITY
+### HUMIDITY SENSOR FUNCTIONALITY
 
 Componets used: Arduino Micro, DS1307 clock, MAX31856 temperature sensor for respective versions, and SHT85 humidity sensor
 
-labview.py is the script run from labview using "open python session", "python node", and "close python session". The function "setup" is run once and sets up the serial communication, returning a tuple(cluster) with startup time and date(string) and automatically selected COM-port. The "run" function returns a cluster of strings and floats with every time it is run, if the specific data is available. Otherwise, it returns previously available data. Current Humidity: Index 0. Current temperature: Index 1. Uptime: Index 2. Messages from program: Index 3. Humidity and temperature is float, rest is string.
+labview.py is the script run from labview using "open python session", "python node", and "close python session".
 
-standalone.py displays temperature and humidity in an interface with a user set time interval and optional datalogging to a .txt file with timestamp, as a standalone application
+The function "setup" is run once and sets up the serial communication, returning a tuple(cluster).
+
+**Setups function returns:**
+| **Index** | **Description**           | **Data type**      |
+|:---------:|:-------------------------:|:------------------:|
+| 0         | Startup time              | String             |
+| 1         | Connected serial COM port | String             |
+| 2         | User message              | String             |
+| 3         | Error alarm               | Boolean True/False |
+|           |                           |                    |
+|           |                           |                    |
+|           |                           |                    |
+|           |                           |                    |
+|           |                           |                    |
+
+Selected COM can be overwritten by sending a string with name (example COM4) as an optional first input parameter, if the autocom fails (expand return type/return menu downwards in Labview for input parameters).
+
+The "run" function returns a cluster of data with every time it is run, if the specific data is available. Otherwise, it returns previously available data.
+
+**Run function returns:**
+| **Index** | **Description** | **Data type**      |
+|:---------:|:---------------:|:------------------:|
+| 0         | Humidity        | Float              |
+| 1         | Temperature     | Float              |
+| 2         | Uptime          | String             |
+| 3         | User message    | String             |
+| 4         | Error alarm | Boolean True/False |
+|           |                 |                    |
+|           |                 |                    |
+|           |                 |                    |
+|           |                 |                    |
+
+standalone.py displays temperature and humidity in an interface with a user set COM override, time interval, and optional datalogging to a .txt file with timestamp, as a standalone application
 
 Labview IV is available, send me an email
 
 
 ---------------
-SETUP
+### SETUP
 
 Python for Labview and configurations are done by running the setup file. It will install python 3.6.8 that works with Labview 2019 and add it to PATH, making standalone.py runnable, and the labview.py file in Labview. Then, it will install PIP if not allready installed, plus required libraries.
+
 You'll need to have Admin from IT to run this installer
+
+Installer is tested thorougly on Windows 10 only. Other windows OS should be safe, but not completely confirmed.
+
+Installing python 3.6.8x86, adding it to PATH, and installing pip with libraries pyserial plus tkinter if using the standalone version, can all be done manually as well, regardless of OS.
 
 
 ---------------
-OPERATION
+### OPERATION
 
 Coming:
-
-    Self-interrupt on Setup if box is not connected within a timeframe
 
     Device hardware version, user set time interval, optional datalogging, and what connections are being used can be set from the configuration file settings.(extension). Device hardware version 1 is with both MAX31856 and SHT85 (more accurate temperature), and 2 is only SHT85 (more tidy).
 
     All available data values returned at once or alternatively as None if not available instead of newest data update, depending if anyone wants it
+
+    All delays based on deltatime for more seamlessness.
 
 
 Program runs as long as computer is not in sleep mode
@@ -52,8 +89,13 @@ If USB is removed, the program will recover if USB is reconnected within the tim
 
 The USB can only be used by one device/virtual machine at a time. More will lock the temperature and humidity sensor and cause it to hiccup.
 
+There is some delay when stopping the program
+
+User message and error alarm doesen't update until the function is done running or actually encounters an error, so they might not update in an instant if running twice during the same Labview session
+
+
 ---------------
-TROUBLESHOOTING
+### TROUBLESHOOTING
 
 standalone.py won't run:
     Both .py program files needs to be in the same folder for standalone.py to work
@@ -67,9 +109,12 @@ The program crashes:
 Temperature/humidity sensor is stuck in setup with frantic LED blinks:
     Only one device/virtual machine can access the measuring device's serial port at a time. Close one setup and run function session and try setup again.
 
+No reading from device:
+    The data is attempted read before it is recieved. Reducing interval should help.
 
 
-Non-frantic LED flashes indicates any other error
+
+Non-frantic LED flashes indicates an Arduino-side error
 
 The device can be reset by unplugging and reconnecting the USB
 
@@ -81,7 +126,7 @@ It would be great to hear any feedback and suggestions for improvement!
 
 
 ---------------
-Version log
+### Version log
 
 Version 1.0:
 First release
@@ -89,5 +134,10 @@ Added an easter egg
 
 Version 1.1:
 Prevented program from freezing on error during run
+
+Version 1.2:
+Timeout of 20 seconds on setup(), skipping run() whenever it's run if it failed
+Added error messages for user
+Setup() now returns the Arduino COM port, and both Setup() and Run() returns error message and error True/False
 
 ---------------
