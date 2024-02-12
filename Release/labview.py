@@ -20,6 +20,7 @@ reconnectFailed = False
 
 datalogging = False
 
+
 def exit():
     sys.exit(0)
 
@@ -33,6 +34,9 @@ def exit():
 data = [float(0), float(0), "", "", False] #Data sent to calling program. It's global to just send previously recieved data if not recieved when the run function is called.
 
 def setup(comOverride = None, labview = True, datalogging = False):
+    """
+    And by the way, if you hate to go to school, you might grow up to be a mule.
+    """
     global logName
     global startTime
     global decimal
@@ -396,8 +400,6 @@ def run(labview = True, testCase = False):
     else:
         userMessage = "Skipped, setup won't run properly. Setup function error message probably has information"
         errorIndicator = True
-    
-    print("NAAAAH" + str(generalErrorActive))
 
     if not userMessage is None:
         data[3] = userMessage

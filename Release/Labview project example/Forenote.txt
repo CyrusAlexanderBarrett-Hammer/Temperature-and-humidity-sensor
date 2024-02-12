@@ -1,0 +1,2 @@
+The setup.bat file (not yet working) will install python 3.6.8 that works with Labview 2019 and add it to PATH, making standalone.py runnable, and the labview.py file in Labview. Then, it will install PIP if not allready installed, plus required libraries.
+You'll need to have Admin from IT to run this installer
