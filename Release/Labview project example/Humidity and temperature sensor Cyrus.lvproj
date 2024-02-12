@@ -32,9 +32,6 @@
 		<Item Name="Front Panel.vi" Type="VI" URL="../Front Panel.vi"/>
 		<Item Name="Untitled 1.vi" Type="VI" URL="../Untitled 1.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
-			<Item Name="vi.lib" Type="Folder">
-				<Item Name="Stall Data Flow.vim" Type="VI" URL="/&lt;vilib&gt;/Utility/Stall Data Flow.vim"/>
-			</Item>
 			<Item Name="PythonVersionsEnum.ctl" Type="VI" URL="../../../../../../../../../../Program Files (x86)/National Instruments/LabVIEW 2019/examples/Connectivity/Python/support/PythonVersionsEnum.ctl"/>
 		</Item>
 		<Item Name="Build Specifications" Type="Build">
