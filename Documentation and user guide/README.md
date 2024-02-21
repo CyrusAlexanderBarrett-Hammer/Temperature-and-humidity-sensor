@@ -49,7 +49,7 @@ Labview IV is available, send me an email
 ---------------
 ### SETUP
 
-#### Manually:
+#### Automatically:
 
 Python for Labview and configurations are done by running the setup file, it does not work yet. It will install python 3.6.8 that works with Labview 2019 and add it to PATH, making standalone.py runnable, and the labview.py file in Labview. Then, it will install PIP if not allready installed, plus required libraries.
 
@@ -98,9 +98,11 @@ If USB is removed, the program will recover if USB is reconnected within the tim
 
 The USB can only be used by one device/virtual machine at a time. More will lock the temperature and humidity sensor and cause it to hiccup.
 
-There is some delay when stopping the program
+There is some small delay when stopping the program
 
-User message and error alarm doesen't update until the function is done running or actually encounters an error, so they might not update in an instant if running twice during the same Labview session
+User message and error alarm doesen't update until the function is done running or actually encounters an error, so they might not update in an instant if running twice during the same Labview session. Timeouts saves the day.
+
+run() returns blank values first two times it's called
 
 
 ---------------
@@ -120,6 +122,8 @@ Temperature/humidity sensor is stuck in setup with frantic LED blinks:
 No reading from device:
     The data is attempted read before it is recieved. Reducing interval should help.
 
+run() returns blank first two calls:
+    Increasing interval reduces data loss time, and calling run twice before measurement starts exterminates this flaw
 
 
 Non-frantic LED flashes indicates an Arduino-side error

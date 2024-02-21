@@ -1,3 +1,13 @@
+"""Temperature and Humidity Sensor
+
+This script is used with the temperature and humidity sensor made by Joakim Vigemyr. It contains the functions setup and run, that can be run from Labview.
+setup is called once, and run returns humidity and time.
+These functions are also used by the standalone.py script.
+
+This script works with Python 3.6.8, and needs the pyserial library for this python version.
+
+"""
+
 #For next time: Way more function based (and object oriented?)
 import time
 import re
@@ -11,46 +21,56 @@ from datetime import datetime, timedelta
 
 import serial
 import serial.tools.list_ports
-from serial import Serial
-from serial import SerialException, PortNotOpenError
+from serial import Serial, SerialException, PortNotOpenError
 
-generalErrorActive = False #Cancels new Labview function calls on error
+generalErrorActive = False #Used to skip a function, cancelling external Labview function calls on error
 
 reconnectFailed = False
 
 datalogging = False
 
+firstRunTime = None #Used until first data and time is recieved from Arduino...
+firstArduinoMeasureTime = None #...that's when I come in! Time difference in Arduino inaccuracy is compensated for.
+timeCompensation = None #Arduino time is somewhat off, compensate!
+#Compensate is the most upvoted word this year
 
-def exit():
-    sys.exit(0)
-
-# def program():
-    # interval = str(interval)
-    # interval = re.sub(r"[^\d.,]+", "", interval)
-    # interval = re.sub(r"[,]+", ".", interval)
-    # interval = float(interval)
 
 #Humidity, temperature, time, user message, error indicator
 data = [float(0), float(0), "", "", False] #Data sent to calling program. It's global to just send previously recieved data if not recieved when the run function is called.
 
 def setup(comOverride = None, labview = True, datalogging = False):
     """
-    And by the way, if you hate to go to school, you might grow up to be a mule.
-    """
+    Sets up COM communication, accurate time as recieved from Arduino, and datalogging
+
+    Args:
+        comOverride (str): User can specify Arduino COM manually, skipping auto connect
+            (default is None)
+        labview (bool): Is Labview calling this function?
+            (default is True)
+        datalogging (bool): In the case Labview is not used, is datalogging wanted?
+            (default is False)
+
+    Returns:
+        A tuple (outputStartTime, ser.port, userMessage, errorIndicator)  containing a string, a string, a string, and a bool
+        
+        outputStartTime is setup complete time
+        ser.port is connected port number
+        userMessage is message for user, including errors
+        errorIndicator indicates an error
+        """
+
     global logName
     global startTime
     global decimal
-    global datalog
     global generalErrorActive
 
     decimal = ""
     startTime = datetime.now()
     outputStartTime = ""
     logName = ""
-    datalog = ""
 
-    userMessage = None
-    errorIndicator = False #Innocent until proven guilty
+    userMessage = None #Can be both normal message and error
+    errorIndicator = False #Error signal to user and error check. Innocent until proven guilty.
 
     #Labview takes care of the datalogging
     if(labview == True):
@@ -65,41 +85,7 @@ def setup(comOverride = None, labview = True, datalogging = False):
     if userMessage is None:
         userMessage = setupCOM(comOverride)
         print("Roses are red, violets are blue, when I said I liked purple, I lied to you!")
-    if userMessage is None:
-        timeout = 20
-
-        readStartTime = "    "
-        startTime = "    "
-
-        deltaTimeStart = datetime.now()
-        startTimeError = False
-        timedOut = False
-        while not readStartTime[0:2] == "02" and not readStartTime == None and not startTimeError:
-            if datetime.now() > deltaTimeStart + timedelta(seconds=timeout):
-                timedOut = True
-                startTimeError = True
-            try:
-                incoming = str(ser.readline().decode().strip()) #Numbers recieved from Arduino
-            except:
-                serialConnectivity = checkComStatus()
-            print("Ser is " + str(ser))
-            if incoming[0] == "0" and incoming[1] == "2": #Time label "02":
-                readStartTime = incoming
-
-        if not startTimeError:
-            startTime = cleanReading(readStartTime)
-            startTime = datetime.strptime(startTime, "%d/%m/%Y %H:%M:%S") #Formats to datatime from  Arduino string, allowing math
-
-            if datalogging == True:
-                logName = "datalog " + str(startTime.day) + "." + str(startTime.month) + "." + str(startTime.year) + " " + str(startTime.hour) + "-" + str(startTime.minute) + ".txt"
-    
-            # re.sub(r'(\.\d)\d*', r'\1', outputStartupTime)
-            outputStartTime = startTime.strftime("%d/%m/%Y %H:%M:%S")
-            print("Setup done")
-        
-        else:
-            if timedOut:
-                userMessage = "Start time recieval timed out"
+    startTime = datetime.now()
 
     
     if userMessage is None:
@@ -112,14 +98,41 @@ def setup(comOverride = None, labview = True, datalogging = False):
 
 
 def run(labview = True, testCase = False):
+    """
+    Main functionality. Reads and returns information to user in real-time, and writes to data file if active, once every run
+
+    Args:
+        labview (bool):
+            Is Labview calling this function?
+                (default is True)
+        testCase (bool):
+            Boolean for developer tests. This functionality is botched. To be seen, but not heard.
+                (default is False)
+
+        Returns:
+            A list with humidity, temperature, time, user message, and error indicator containing a float, a float, a string, a string, and a bool
+            If Labview calls the function, a tuple is returned instead
+
+            Humidity is device humidity reading
+            Temperature is device temperature reading
+            Time is accurate current time since first 
+            User message is message to user
+            Error indicator indicates an error
+
+    """
+
     stringDataOnly = False
 
     errorIndicator = False
     
     global reconnectFailed
 
+    global firstRunTime #Used before time from Arduino is known
+    global firstArduinoMeasureTime
+    global timeCompensation #Arduino time is a little off
 
-    #Possible errors reported by Arduino. They are translated from their numerical value from the serial USB to an index in the list.
+
+    #Possible errors reported by Arduino, translated from Arduino numerical value.
     alerts = [
         "Unknown Arduino error",
         "Empty placeholder",
@@ -146,54 +159,32 @@ def run(labview = True, testCase = False):
     dataTime = None
     userMessage = ""
 
-    if not generalErrorActive:
+    if firstRunTime is None:
+        firstRunTime = datetime.now()
 
+    if not generalErrorActive:
         incoming = "    "
 
         #Avoids false error first time, serial is guaranteed to work properly
         dataValid = True
         serialConnectivity = "Successful"
 
-    
-        readStartTime = time.time()
-        #Look for temperature and humidity or error indicator "102" until recieved. Other error handling from Arduino can be put here too. In other words, read any input from Arduino
-        # validCodes = ["02", "03", "04", "102"]
+        maxBufferSize = 50 #Flush if above to make reading faster. About ten bytes per line from serial USB
 
-        # #while ((not readDataTime[2] == "0" or not readDataTime[3] == "2") or (not readHumidity[2] == "0" or not readHumidity[3] == "3") or (not readTemperature[2] == "0" or not readTemperature[3] == "4")) and (not incoming[2] == "1" or not incoming[3] == "0" or not incoming[4] == "2") and serialConnectivity == "Successful": #If everything normal, and no error
-        # while (not readDataTime[2:4] == validCodes[0] or not readHumidity[2:4] == validCodes[1] or not readTemperature[2:4] == validCodes[2]) and not incoming[2:5] == "102" and all(i is not (None or str("")) for i in [readDataTime, readHumidity, readTemperature]) and serialConnectivity == "Successful": #If everything normal, and no error
-        #     try:
-        #         incoming = str(ser.readline().decode().strip()) #Numbers recieved from Arduino
-        #         print("Successfully read data from Arduino")
-        #     except:
-        #         print("Whoops, data serial exception. Going to search for COM reconnect")
-        #         serialConnectivity = CheckComStatus()
-        #     if incoming[2] == "0" and incoming[3] == "2": #Time label "02":
-        #         readDataTime = incoming
-        #     if incoming[2] == "0" and incoming[3] == "3": #Humidity label "03"
-        #         readHumidity = incoming
-        #     if incoming[2] == "0" and incoming[3] == "4": #Temperature label "04"
-        #         readTemperature = incoming
+        data_pools = {
+            '04': None,  # Temperature
+            '02': None,  # Time
+            '03': None,  # Humidity
+            'alerts': []  # Alerts
+        }
 
-        #     print("Humidity is " + str(type(readHumidity)))
-
-        try:
-
-            maxBufferSize = 50 #Flush if above to make reading faster. About ten bytes per line from serial USB
-
-            data_pools = {
-                '04': None,  # Temperature
-                '02': None,  # Time
-                '03': None,  # Humidity
-                'alerts': []  # Alerts
-            }
-
-
-            def is_new_data(readData, data_pools):
-                if readData.startswith('alert'):
-                    return readData not in data_pools.get('alerts', [])
-                else:
-                    data_type = readData[0:2]
-                    return data_pools.get(data_type) != readData
+        
+        def is_new_data(readData, data_pools):
+            if readData.startswith('alert'):
+                return readData not in data_pools.get('alerts', [])
+            else:
+                data_type = readData[0:2]
+                return data_pools.get(data_type) != readData
 
 
             # while ser.in_waiting > maxBufferSize:
@@ -203,59 +194,49 @@ def run(labview = True, testCase = False):
             # readCharacter = ""
             # print("Waiting: " + str(ser.in_waiting))
 
-            incomingPool = []
+        incomingPool = []
+        try:
             while ser.in_waiting:
                 incomingData = ser.readline().decode().strip()
                 #print(ser.readline())
                 incomingPool.append(incomingData)
             incomingPool.reverse()
-
-            for readData in incomingPool:
-                if is_new_data(readData, data_pools):
-                    if readData.startswith('alert'):  # Handling alerts
-                        data_pools['alerts'].append(readData)
-                    else:
-                        data_type = readData[0:2]
-                        if data_type in data_pools:  # Handling other data types
-                            data_pools[data_type] = readData
-
-            # Print final data pools
-            print("Final Data Pools:")
-            for key, value in data_pools.items():
-                print(f"{key}: {value}")
-
-
-            print(data_pools)
-            for key, value in data_pools.items(): #Assigning each type of reading data to correct variable if it's there, plus errors
-                if key == "02":
-                    readDataTime = value
-                elif key == "03":
-                    readHumidity = value
-                elif key == "04":
-                    readTemperature = value
-                elif key == "alerts":
-                    for i in value:
-                        x = cleanReading(i, 5, 0)
-                        if not x in activeAlerts: #We only need one of each alert type per round!
-                            activeAlerts.append(x)
-
+            
         except Exception:
             traceback.print_exc()
             print("Whoops, data serial exception. Going to search for COM reconnect")
             serialConnectivity = checkComStatus()
 
+        for readData in incomingPool:
+            if is_new_data(readData, data_pools):
+                if readData.startswith('alert'):  # Handling alerts
+                    data_pools['alerts'].append(readData)
+                else:
+                    data_type = readData[0:2]
+                    if data_type in data_pools:  # Handling other data types
+                        data_pools[data_type] = readData
+                        
+        # Print final data pools
+        print("Final Data Pools:")
+        for key, value in data_pools.items():
+            print(f"{key}: {value}")
+        print(data_pools)
+
+
+        for key, value in data_pools.items(): #Assigning each type of reading data to correct variable if it's there, plus errors
+            if key == "02":
+                readDataTime = value
+            elif key == "03":
+                readHumidity = value
+            elif key == "04":
+                readTemperature = value
+            elif key == "alerts":
+                for i in value:
+                    x = cleanReading(i, 5, 0)
+                    if not x in activeAlerts: #We only need one of each alert type per round!
+                        activeAlerts.append(x)
+
         print("Exited data collection sequence")
-
-
-
-
-        if incoming[0:3] == "102":
-            dataValid = False
-            userMessage += str("Temperature sensor error")
-            print("Temperature sensor error")
-            if(testCase):
-                with open("feilmeldinger.txt", "a") as file:
-                    file.write(str(datetime.now() + ": " + "Ingen kontakt med temperatursensor"))
 
         if serialConnectivity == "Trying":
             dataValid = False
@@ -284,8 +265,6 @@ def run(labview = True, testCase = False):
 
                 if startTime.month == 4 and startTime.day == 1:
                     userMessage = "Happy April fool's day!"
-                    with open("feilmeldinger.txt", "a") as file:
-                        file.write(str(datetime.now() + ": " + "Vart du skremt nu? Sjekk dagens dato.\n"))
                 elif (startTime.month == 12 and startTime.day == 31) or (startTime.month == 1 and startTime.day == 1):
                     userMessage = "Happy new year!"
 
@@ -299,53 +278,76 @@ def run(labview = True, testCase = False):
 
             #Clean pure number as string
             dataTime = cleanReading(readDataTime)
-            outputDeltaStartTimeDataTime = None
+            correctedDataTime = None
+            deltaStartTimeDataTime = None
+            outputDeltaStartTimeDataTime = None #Accurate stopwatch
 
             if dataTime is not None:
                 try:
                     dataTime = datetime.strptime(dataTime, "%d/%m/%Y %H:%M:%S")
-                    deltaStartTimeDataTime = dataTime - startTime #Accurate stopwatch
-                    outputDeltaStartTimeDataTime = str(deltaStartTimeDataTime)
-                    if(decimal == ","):
-                        outputDeltaStartTimeDataTime = str(outputDeltaStartTimeDataTime).replace(".", ",")
-                except:
+
+                    if firstArduinoMeasureTime is None:
+                        firstArduinoMeasureTime = dataTime
+                        timeCompensation = datetime.now() - firstArduinoMeasureTime
+                    
+                    if timeCompensation is not None:
+                        correctedDataTime = dataTime + timeCompensation
+
+                    if correctedDataTime is not None:
+                        print("HIIII")
+                        print(correctedDataTime)
+                        print(firstRunTime)
+                        deltaStartTimeDataTime = correctedDataTime - firstRunTime
+
+                    print(deltaStartTimeDataTime)
+                    
+                    outputDeltaStartTimeDataTime = deltaStartTimeDataTime
+                    
+                    if outputDeltaStartTimeDataTime is not None:
+                        outputDeltaStartTimeDataTime, _ = str(outputDeltaStartTimeDataTime).split(".", 1)
+                        if(decimal == ","):
+                            outputDeltaStartTimeDataTime = str(outputDeltaStartTimeDataTime).replace(".", ",")
+                except Exception as e:
+                    print(e)
                     pass
+            
+                if outputDeltaStartTimeDataTime is not None:
+                    data[2] = outputDeltaStartTimeDataTime
+
+                #Clean pure number as string
+                humidity = cleanReading(readHumidity)
 
             if outputDeltaStartTimeDataTime is not None:
-                data[2] = outputDeltaStartTimeDataTime
 
-            #Clean pure number as string
-            humidity = cleanReading(readHumidity)
+                if humidity is not None:
+                    #We need number with two decimals
+                    try:
+                        humidity = float(humidity)
+                        humidity = humidity / 100
+                        #humidity = str(humidity)+
+                        #if decimal == ",":
+                        #    humidity = humidity.replace(".", ",")
+                        data[0] = float(humidity)
+                    except:
+                        pass
 
-            if humidity is not None:
-                #We need number with two decimals
-                try:
-                    humidity = float(humidity)
-                    humidity = humidity / 100
-                    #humidity = str(humidity)
-                    #if decimal == ",":
-                    #    humidity = humidity.replace(".", ",")
-                    data[0] = humidity
-                except:
-                    pass
+                #Clean pure number as string
+                temperature = cleanReading(readTemperature)
+                for i in range(5):
+                    print("Cleaned: " + str(readTemperature))
 
-            #Clean pure number as string
-            temperature = cleanReading(readTemperature)
-            for i in range(5):
-                print("Cleaned: " + str(readTemperature))
-
-            print("Temperature is " + str(temperature))
-            if temperature is not None:
-                try:
-                    #We need number with two decimals, reading is a whole number where last two digits should have been decimals
-                    temperature = float(temperature)
-                    temperature = temperature / 100
-                    # temperature =  str(temperature)
-                    # if decimal == ",":
-                    #     temperature = temperature.replace(".", ",")
-                    data[1] = temperature
-                except:
-                    pass
+                print("Temperature is " + str(temperature))
+                if temperature is not None:
+                    try:
+                        #We need number with two decimals, reading is a whole number where last two digits should have been decimals
+                        temperature = float(temperature)
+                        temperature = temperature / 100
+                        # temperature =  str(temperature)
+                        # if decimal == ",":
+                        #     temperature = temperature.replace(".", ",")
+                        data[1] = float(temperature)
+                    except:
+                        pass
 
             if(datalogging == True):
                 #.replace(".", ",")
@@ -377,19 +379,13 @@ def run(labview = True, testCase = False):
                 with open(logName, "a") as file:
                     file.write(toFile)
 
-                while ser.in_waiting > 0:
-                    try:
-                        incoming = str(ser.readline().decode().strip())
-                        print("Emptied buffer 1")
-                    except:
-                        print("Failed to empty buffer 1")
-
         if serialConnectivity == "Successful":
             try:
                 ser.flushInput()
                 ser.flushOutput()
                 reconnectFailed = False
-                errorIndicator = False
+                if not activeAlerts:
+                    errorIndicator = False
             except:
                 print("Failed to empty buffer and attempting to reconnect")
                 serialConnectivity = checkComStatus()
@@ -419,9 +415,11 @@ def run(labview = True, testCase = False):
         print(data[index])
 
 
+    ser.flushInput()
+    ser.flushOutput()
     print("Run done")
     if labview:
-        return (float(data[0]), float(data[1]), data[2], data[3], data[4])
+        return (data[0], data[1], data[2], data[3], data[4])
 
     else:
         return(data)
@@ -429,6 +427,25 @@ def run(labview = True, testCase = False):
 
 
 def cleanReading(reading, startLetters = 2, endLetters = 0):
+    """
+    Gets rid of unwanted characters, stripping down to the carried information
+
+    Args:
+        reading(string):
+            The raw reading to be stripped
+        startLetters (int):
+            How many trailing characters before carried information to get rid of
+                (default is 2)
+        endLetters(int):
+            How many trailing characters after carried information to get rid of
+                (default is 0)
+
+        Returns:
+            string: The stripped-down carried information
+
+    """
+
+
     if reading is not None:
         #Clean pure number as string
         reading = reading[startLetters:]
@@ -437,11 +454,23 @@ def cleanReading(reading, startLetters = 2, endLetters = 0):
     return reading
 
 
-def setupCOM(comOverride):
+def setupCOM(comOverride = None):
+    """
+    Does initial COM port setup
+
+    Args:
+        comOverride(string):
+            Skips finding COM port via handshake if specified, since it's allready known
+                (default is None)
+
+
+    """
+
+
     global ser
     ser = ""
 
-    timeout = 20
+    timeout = 60
 
     print("Entered SetupCOM()")
 
@@ -451,9 +480,9 @@ def setupCOM(comOverride):
     timed_out = False
     noSerialLibrary = False
 
-    COMfound = False
+    COMFound = False
     deltaTimeStart = datetime.now()
-    while not COMfound and setupError == False:
+    while not COMFound and setupError == False:
         if datetime.now() > deltaTimeStart + timedelta(seconds=timeout):
             timed_out = True
             setupError = True
@@ -481,11 +510,11 @@ def setupCOM(comOverride):
                 serPort.write(bytes("10\n", "utf_8")) #Ping!
                 incoming = str(serPort.readline().decode().strip()) #Recieved 01?
                 if incoming == "01":
-                    COMfound = True
+                    COMFound = True
                     break
                 print("Incoming is " + incoming)
                 print("Finished poll attempt")
-                print(COMfound)
+                print(COMFound)
                 serPort.close()
 
 
@@ -502,19 +531,20 @@ def setupCOM(comOverride):
                 serPort.write(bytes("10\n", "utf_8")) #Ping!
                 incoming = str(serPort.readline().decode().strip()) #Recieved 01?
                 if incoming == "01":
-                    COMfound = True
+                    COMFound = True
                     break
                 print("Incoming is " + incoming)
                 print("Finished poll attempt")
-                print(COMfound)
+                print(COMFound)
+                serPort.close()
 
 
         except NameError as e:
+            setupError = True
             if "name 'serial' is not defined" in str(e):
                 noSerialLibrary = True
             else:
                 return(str(traceback.print_exc()))
-            setupError = True
 
         except Exception as e:
             print(e)
@@ -533,11 +563,17 @@ def setupCOM(comOverride):
         ser.flushOutput()
 
 
-def connectivityFaultHandler(): #Attempts to reestablish COM ports
+def connectivityFaultHandler():
+    """
+    Attempts to reestablish lost connectivity
+
+    """
+
+
     print("Entered the connectivity fault handler")
     incoming = "" 
     ser.timeout = 20
-    while not incoming == "01" or incoming[0:2] == "03":
+    while not incoming == "01":
         ser.close()
         ser.open()
         print("Connection not established in the connectivity fault handler")
@@ -558,6 +594,25 @@ def connectivityFaultHandler(): #Attempts to reestablish COM ports
 checkComStatusAttempt = 0
 # def checkComStatus(retries = 50, timeout = 2):
 def checkComStatus(retries = 5, timeout = 2):
+    """
+    Checks if serial COM error is resolved once every time it is run until giving up after retries, and attempts reconnecting if so
+
+    Args:
+        retries(int):
+            How many times to check for COM error resolve
+        timeout (int):
+            How long to wait for COM error resolve between retries
+                (default is 2)
+        endLetters(int):
+            How many trailing characters after carried information to get rid of
+                (default is 0)
+
+        Returns:
+            string: COM error and reconnect attempt status
+
+    """
+
+
     print("Entered the COM reconnect search")
     global checkComStatusAttempt
 
@@ -602,6 +657,9 @@ def checkComStatus(retries = 5, timeout = 2):
     
     
 # setup()
+# print("HI THERE!")
+# print(setup.__doc__)
+# help(setup)
 # while True:
 #     outputedData = run(True)
 #     for i in range(10):
