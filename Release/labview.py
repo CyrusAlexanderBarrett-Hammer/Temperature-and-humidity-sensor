@@ -1,7 +1,7 @@
 """Temperature and Humidity Sensor
 
 This script is used with the temperature and humidity sensor made by Joakim Vigemyr. It contains the functions setup and run, that can be run from Labview.
-setup is called once, and run returns humidity and time.
+setup is called once, and run returns humidity and startup time.
 These functions are also used by the standalone.py script.
 
 This script works with Python 3.6.8, and needs the pyserial library for this python version.
@@ -38,9 +38,9 @@ timeCompensation = None #Arduino time is somewhat off, compensate!
 #Humidity, temperature, time, user message, error indicator
 data = [float(0), float(0), "", "", False] #Data sent to calling program. It's global to just send previously recieved data if not recieved when the run function is called.
 
-def setup(comOverride = None, labview = True, datalogging = False):
+def setup(comOverride = None, labview = True, datalogging = False): #Default arguments makes Labview usage easier
     """
-    Sets up COM communication, accurate time as recieved from Arduino, and datalogging
+    Sets up COM communication, accurate and corrected time as recieved from Arduino, and datalogging
 
     Args:
         comOverride (str): User can specify Arduino COM manually, skipping auto connect
@@ -65,7 +65,7 @@ def setup(comOverride = None, labview = True, datalogging = False):
     global generalErrorActive
 
     decimal = ""
-    startTime = datetime.now()
+    startTime = datetime
     outputStartTime = ""
     logName = ""
 
@@ -467,6 +467,7 @@ def setupCOM(comOverride = None):
     """
 
 
+    #NOTE: I like the handshake. It avoids sending serial data to the wrong Arduino device. I might add an option for user to skip, and use ser.isOpen() instead.
     global ser
     ser = ""
 
@@ -483,25 +484,21 @@ def setupCOM(comOverride = None):
     COMFound = False
     deltaTimeStart = datetime.now()
     while not COMFound and setupError == False:
+
+        #Signify interrupt if timed out
         if datetime.now() > deltaTimeStart + timedelta(seconds=timeout):
             timed_out = True
             setupError = True
+
         try:
-            comlist = serial.tools.list_ports.comports()    # Array of connected ports. Arduino might not be connected at startup, let's get the COM-list periodically
-            print(comlist)
-            portlist = []                                   #COMs, narrowed down to names
-            for com in comlist:
-                # port = str(port)
-                # match = re.search(r'COM\d+', port)          #Checks for a match for "COM" + "number"...
-                # comPort = match.group()                     #...and converts from match datatype to string
-                portlist.append(str(com.name))
-            print(portlist)
 
             if comOverride is None:                             # Automatic connection if user have not manually specified COM port
-
-                port = portlist[random.randint(0, len(portlist) - 1)] #Alternative to iterating, avoids getting stuck on same COM on error
-                print(port)
-                serPort = serial.Serial(port, 115200, timeout = 2)
+                comlist = serial.tools.list_ports.comports()    # Array of connected ports. Arduino might not be connected at startup, let's get the COM-list periodically
+                print(comlist)
+                for com in comlist:
+                    if com.description.startswith("Arduino"):
+                        serPort = serial.Serial(com.name, 115200, timeout = 2)
+                        break
                 serPort.close()
                 # time.sleep(0.5)
                 serPort.open()
@@ -521,8 +518,6 @@ def setupCOM(comOverride = None):
             else:
                 #Boilerplate? Make function maybe?
                 # print(excludedPort)
-                dummyPort = portlist[random.randint(0, len(portlist) - 1)] #Alternative to fixed COM dummy, avoids getting stuck on same COM on error
-                serPort = serial.Serial(dummyPort, 115200, timeout = 2) #Dummy COM initiation to resolve bug
                 serPort = serial.Serial(comOverride, 115200, timeout = 2)
                 serPort.close()
                 serPort.open()

@@ -120,7 +120,7 @@ window = tk.Tk()
 
 # Create input fields
 
-comOverrideInText = tk.Label(window, text="    Manual COM override in case of Setup unsuccessful (example COM4)? Leave empty for auto.    ") #Does the decimal point conversion across regions work in the labview.py script?
+comOverrideInText = tk.Label(window, text="    Manual COM override in case of multiple serial devices or setup unsuccessful (example COM4)? Leave empty for auto.    ") #Does the decimal point conversion across regions work in the labview.py script?
 comOverrideInText.pack()
 comOverrideIn = tk.Entry(window)
 comOverrideIn.pack()
